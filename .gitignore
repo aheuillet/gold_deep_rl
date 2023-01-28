@@ -1,3 +1,10 @@
+*.ram
+Kirby_Dream_Land.gb
+Super_Mario_Land.gb
+*.gbc
+*.ss1
+Pokemon - Gold Version (USA, Europe) (SGB Enhanced).sav
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
