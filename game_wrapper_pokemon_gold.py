@@ -7,6 +7,7 @@ import logging
 
 import numpy as np
 from pyboy.utils import WindowEvent
+from collections import namedtuple
 
 from .base_plugin import PyBoyGameWrapper
 
@@ -21,13 +22,11 @@ except ImportError:
 #enumeration of the different scenes available in the game
 scenes = {"overworld": 0, "wild": 1, "trainer": 2, "gym": 3, "elite_four": 0}
 
-
-def _bcm_to_dec(value):
-    return (value >> 4) * 10 + (value & 0x0F)
+Pokemon = namedtuple('Pokemon', ['hp', 'max_hp', 'level', 'type']) #simplified Pokemon representation
 
 #Reads and returns BCM value of 2 bytes big-endian memory value.
 def read_big_endian(value1, value2):
-    return _bcm_to_dec(value1)*100 + _bcm_to_dec(value2)
+    return (value1 << 8) + value2
 
 
 class GameWrapperPokemonGold(PyBoyGameWrapper):
@@ -82,8 +81,8 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         self.update_scene()
         self.update_current_poke_hp()
 
-        if self.scene != "trainer":
-            pass
+        if self.scene != "overworld":
+            self.update_battle_stats()
 
     def update_current_poke_hp(self):
         val = _bcm_to_dec(self.pyboy.get_memory_value(0xC1A6))
