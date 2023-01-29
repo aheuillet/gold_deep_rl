@@ -22,9 +22,11 @@ except ImportError:
 #enumeration of the different scenes available in the game
 scenes = {"overworld": 0, "wild": 1, "trainer": 2, "gym": 3, "elite_four": 0}
 
-Pokemon = namedtuple('Pokemon', ['hp', 'max_hp', 'level', 'type']) #simplified Pokemon representation
+Pokemon = namedtuple('Pokemon', ['hp', 'max_hp', 'level']) #simplified Pokemon representation
 
-#Reads and returns BCM value of 2 bytes big-endian memory value.
+saved_state = "/home/alexandre/Documents/perso/emerald_deep_rl/games/after_rival_pokemon_gold"
+
+#Reads and returns 2 bytes big-endian memory value.
 def read_big_endian(value1, value2):
     return (value1 << 8) + value2
 
@@ -47,21 +49,19 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         """Provides the current number of badges."""
         self.money = 0
         """The amount of money."""
-        self.party_size = 0
-        """The number of pokemons in party"""
         self.low_hp = False
         """This value is set to True if the active Pokemon has low hp."""
         self.scene = 0
 
         #Party state
-        self.current_poke_hp = 0
-        """HP of the first pokemon of the party (current pokemon)."""
-        self.current_poke_max_hp = 0
-        """Max HP of the first pokemon of the party (current pokemon)."""
+        self.current_poke = Pokemon(hp=0, max_hp=0, level=0)
+        """State of the first pokemon of the party (current pokemon)."""
+        self.party_size = 0
+        """The number of pokemons in party"""
 
         #Battle state
-        self.opponent_poke_HP = 0
-        """HP of the current opponent Pokemon."""
+        self.opponent_poke = Pokemon(hp=0, max_hp=0, level=0)
+        """State of the current opponent Pokemon."""
 
         self.fitness = 0
         """
@@ -79,24 +79,26 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         
         self.update_badges()
         self.update_scene()
-        self.update_current_poke_hp()
+        self.update_current_poke()
 
         if self.scene != "overworld":
             self.update_battle_stats()
 
-    def update_current_poke_hp(self):
-        val = _bcm_to_dec(self.pyboy.get_memory_value(0xC1A6))
+    def update_current_poke(self):
+        val = self.pyboy.get_memory_value(0xC1A6)
         if val > 80:
             self.low_hp = True
         else:
             self.low_hp = False
-        self.current_poke_hp = read_big_endian(self.pyboy.get_memory_value(0xDA4C), self.pyboy.get_memory_value(0xDA4D))
-        self.current_poke_max_hp = read_big_endian(self.pyboy.get_memory_value(0xDA4E), self.pyboy.get_memory_value(0xDA4F))
-
+        self.current_poke.hp = read_big_endian(self.pyboy.get_memory_value(0xDA4C), self.pyboy.get_memory_value(0xDA4D))
+        self.current_poke.max_hp = read_big_endian(self.pyboy.get_memory_value(0xDA4E), self.pyboy.get_memory_value(0xDA4F))
+        self.current_poke.level = self.pyboy.get_memory_value(0xDA49)
 
     def update_battle_stats(self):
-        self.opponent_poke_HP = read_big_endian(self.pyboy.get_memory_value(0xD0FF), self.pyboy.get_memory_value(0xD100))    
-    
+        self.opponent_poke.hp = read_big_endian(self.pyboy.get_memory_value(0xD0FF), self.pyboy.get_memory_value(0xD100))    
+        self.opponent_poke.max_hp = read_big_endian(self.pyboy.get_memory_value(0xD101), self.pyboy.get_memory_value(0xD102))
+        self.opponent_poke.level = self.pyboy.get_memory_value(0xD0FC)    
+
     def update_badges(self):
         self.badges = self.pyboy.get_memory_value(0xD57C)
     
@@ -131,38 +133,36 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         """
         PyBoyGameWrapper.start_game(self, timer_div=timer_div)
 
-        if world_level is not None:
-            self.set_world_level(*world_level)
+        # # Boot screen
+        # while True:
+        #     self.pyboy.tick()
+        #     if self.tilemap_background[6:11, 13] == [284, 285, 266, 283, 285]: # "START" on the main menu
+        #         break
+        # self.pyboy.tick()
+        # self.pyboy.tick()
+        # self.pyboy.tick()
 
-        # Boot screen
-        while True:
-            self.pyboy.tick()
-            if self.tilemap_background[6:11, 13] == [284, 285, 266, 283, 285]: # "START" on the main menu
-                break
-        self.pyboy.tick()
-        self.pyboy.tick()
-        self.pyboy.tick()
+        # self.pyboy.send_input(WindowEvent.PRESS_BUTTON_START)
+        # self.pyboy.tick()
+        # self.pyboy.send_input(WindowEvent.RELEASE_BUTTON_START)
 
-        self.pyboy.send_input(WindowEvent.PRESS_BUTTON_START)
-        self.pyboy.tick()
-        self.pyboy.send_input(WindowEvent.RELEASE_BUTTON_START)
+        # while True:
+        #     if unlock_level_select and self.pyboy.frame_count == 71: # An arbitrary frame count, where the write will work
+        #         self.pyboy.set_memory_value(ADDR_WIN_COUNT, 2 if unlock_level_select else 0)
+        #         break
+        #     self.pyboy.tick()
+        #     self.tilemap_background.refresh_lcdc()
 
-        while True:
-            if unlock_level_select and self.pyboy.frame_count == 71: # An arbitrary frame count, where the write will work
-                self.pyboy.set_memory_value(ADDR_WIN_COUNT, 2 if unlock_level_select else 0)
-                break
-            self.pyboy.tick()
-            self.tilemap_background.refresh_lcdc()
+        #     # "MARIO" in the title bar and 0 is placed at score
+        #     if self.tilemap_background[0:5, 0] == [278, 266, 283, 274, 280] and \
+        #        self.tilemap_background[5, 1] == 256:
+        #         self.game_has_started = True
+        #         break
 
-            # "MARIO" in the title bar and 0 is placed at score
-            if self.tilemap_background[0:5, 0] == [278, 266, 283, 274, 280] and \
-               self.tilemap_background[5, 1] == 256:
-                self.game_has_started = True
-                break
+        # self.saved_state.seek(0)
+        # self.pyboy.save_state(self.saved_state)
 
-        self.saved_state.seek(0)
-        self.pyboy.save_state(self.saved_state)
-
+        self.pyboy.load_state(saved_state)
         self._set_timer_div(timer_div)
 
     def reset_game(self, timer_div=None):
@@ -177,6 +177,7 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         """
         PyBoyGameWrapper.reset_game(self, timer_div=timer_div)
 
+        self.pyboy.load_state(saved_state)
         self._set_timer_div(timer_div)
 
     def game_area(self):
@@ -217,33 +218,20 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         return PyBoyGameWrapper.game_area(self)
 
     def game_over(self):
-        # Apparantly that address is for game over
-        # https://datacrystal.romhacking.net/wiki/Super_Mario_Land:RAM_map
-        return self.pyboy.get_memory_value(0xC0A4) == 0x39
+        return self.current_poke.hp == 0
 
     def __repr__(self):
         adjust = 4
         # yapf: disable
         return (
-            f"Super Mario Land: World {'-'.join([str(i) for i in self.world])}\n" +
-            f"Coins: {self.coins}\n" +
-            f"lives_left: {self.lives_left}\n" +
-            f"Score: {self.score}\n" +
-            f"Time left: {self.time_left}\n" +
+            f"Pokemon Gold\n" +
+            f"Number of badges: {self.badges}\n" +
+            f"Current Poke HP: {self.current_poke.hp}/{self.current_poke.max_hp}\n" +
+            f"Current Poke Level: {self.current_poke.level}\n" +
+            f"Scene: {self.scene}\n" +
+            f"Opponent Poke HP: {"NA" if self.opponent_poke.hp == -1 else self.opponent_poke.hp}/{"NA" if self.opponent_poke.max_hp == -1 else self.opponent_poke.max_hp}\n" +
+            f"Opponent Poke Level": {"NA" if self.opponent_poke.level == -1 else self.opponent_poke.level} +
             f"Level progress: {self.level_progress}\n" +
-            f"Fitness: {self.fitness}\n" +
-            "Sprites on screen:\n" +
-            "\n".join([str(s) for s in self._sprites_on_screen()]) +
-            "\n" +
-            "Tiles on screen:\n" +
-            " "*5 + "".join([f"{i: <4}" for i in range(20)]) + "\n" +
-            "_"*(adjust*20+4) +
-            "\n" +
-            "\n".join(
-                [
-                    f"{i: <3}| " + "".join([str(tile).ljust(adjust) for tile in line])
-                    for i, line in enumerate(self.game_area())
-                ]
+            f"Fitness: {self.fitness}\n"
             )
-        )
         # yapf: enable
