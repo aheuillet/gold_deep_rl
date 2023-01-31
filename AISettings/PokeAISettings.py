@@ -3,19 +3,20 @@ import itertools
 from pyboy import WindowEvent
 from AISettings.AISettingsInterface import AISettingsInterface, Config
 
+# Macros
+DMG_REWARD = 10
+FAINT_REWARD = 100
+ENCOUNTER_REWARD = 1000
+GYM_REWARD = 10000
+
 class GameState():
     def __init__(self, pyboy):
         game_wrapper = pyboy.game_wrapper()
-        "Find the real level progress x"
-        level_block = pyboy.get_memory_value(0xC0AB)
-        # C202 Mario's X position relative to the screen
-        mario_x = pyboy.get_memory_value(0xC202)
-        scx = pyboy.botsupport_manager().screen(
-        ).tilemap_position_list()[16][0]
-        real = (scx - 7) % 16 if (scx - 7) % 16 != 0 else 16
-
-        self.badges = pyboy.get_memory_value(0xD57C)
-
+        self.money = game_wrapper.money
+        self.badges = game_wrapper.badges
+        self.current_poke = game_wrapper.current_poke
+        self.opponent_poke = game_wrapper.opponent_poke
+        self.scene = game_wrapper.scene
 
 
 class PokeAI(AISettingsInterface):
@@ -23,52 +24,36 @@ class PokeAI(AISettingsInterface):
 		self.realMax = [] #[[1,1, 2500], [1,1, 200]]		
 
 	def GetReward(self, prevGameState: GameState, pyboy):
-		"""
-		previousMario = mario before step is taken
-		current_mario = mario after step is taken
-		"""
-		timeRespawn = pyboy.get_memory_value(0xFFA6) #Time until respawn from death (set when Mario has fell to the bottom of the screen) 
-		if(timeRespawn > 0): # if we cant move return 0 reward otherwise we could be punished for crossing a level
-			return 0
+		# timeRespawn = pyboy.get_memory_value(0xFFA6) #Time until respawn from death (set when Mario has fell to the bottom of the screen) 
+		# if(timeRespawn > 0): # if we cant move return 0 reward otherwise we could be punished for crossing a level
+		# 	return 0
 
 		"Get current game state"
-		current_mario = self.GetGameState(pyboy)
+		current_state = self.GetGameState(pyboy)
 
-		if max((current_mario.world[0] - prevGameState.world[0]), (current_mario.world[1] - prevGameState.world[1])): # reset level progress max
-			# reset level progress max on new level
-			for _ in range(0,5):
-				pyboy.tick() # skip frames to get updated x pos on next level
+		reward = 0
 
-			current_mario = self.GetGameState(pyboy)
-
-			pyboy.game_wrapper()._level_progress_max = current_mario.real_x_pos
-			current_mario._level_progress_max = current_mario.real_x_pos
-
-
-		if len(self.realMax) == 0:
-			self.realMax.append([current_mario.world[0], current_mario.world[1], current_mario._level_progress_max])
-		else:
-			r = False
-			for elem in self.realMax: # fix max length
-				if elem[0] == current_mario.world[0] and elem[1] == current_mario.world[1]:
-					elem[2] = current_mario._level_progress_max
-					r = True
-					break # leave loop
-			
-			
-			if r == False: # this means this level does not exist
-				self.realMax.append([current_mario.world[0], current_mario.world[1], current_mario._level_progress_max])
-			
-
-		# reward function simple
-		clock = current_mario.time_left - prevGameState.time_left
-		movement = current_mario.real_x_pos - prevGameState.real_x_pos
-		death = -15*(current_mario.lives_left - prevGameState.lives_left)
-		levelReward = 15*max((current_mario.world[0] - prevGameState.world[0]), (current_mario.world[1] - prevGameState.world[1])) # +15 if either new level or new world
-
-		reward = clock + death + movement + levelReward
+		if current_state.scene == "overworld":
+			pass
+		elif current_state.scene == "wild":
+			if prevGameState.scene == "overworld":
+				reward += 1
+			reward += self.ComputeBattleReward(prevGameState, current_state)
+		elif current_state.scene == "trainer":
+			if prevGameState.scene == "overworld":
+				reward += 10
+			reward += self.ComputeBattleReward(prevGameState, current_state)
+		elif current_state.scene == "gym":
+			if prevGameState.scene == "overworld":
+				reward += 100
+			reward += self.ComputeBattleReward(prevGameState, current_state)
 
 		return reward
+	
+	def ComputeBattleReward(self, prevGameState: GameState, currentGameState: GameState):
+		poke_hp_diff = currentGameState.current_poke.hp - prevGameState.current_poke.hp
+		opponent_hp_diff = currentGameState.opponent_poke.hp - prevGameState.opponent_poke.hp
+		return DMG_REWARD*poke_hp_diff + DMG_REWARD*opponent_hp_diff
 
 	def GetActions(self):
 		baseActions = [WindowEvent.PRESS_BUTTON_A,

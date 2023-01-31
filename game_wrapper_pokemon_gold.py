@@ -23,9 +23,11 @@ except ImportError:
 scenes = {"overworld": 0, "wild": 1, "trainer": 2, "gym": 3, "elite_four": 0}
 
 Pokemon = namedtuple('Pokemon', ['hp', 'max_hp', 'level']) #simplified Pokemon representation
+Point = namedtuple('Point', ['x', 'y'])
 
 saved_state = "/home/alexandre/Documents/perso/emerald_deep_rl/games/after_rival_pokemon_gold"
 
+badges = [0, 0x01, 0x01+0x02, 0x01+0x02+0x04, 0x01+0x02+0x04+0x08, 0x01+0x02+0x04+0x08+0x10, 0x01+0x02+0x04+0x08+0x10+0x20, 0x01+0x02+0x04+0x08+0x10+0x20+0x40, 0xFF]
 #Reads and returns 2 bytes big-endian memory value.
 def read_big_endian(value1, value2):
     return (value1 << 8) + value2
@@ -51,7 +53,10 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         """The amount of money."""
         self.low_hp = False
         """This value is set to True if the active Pokemon has low hp."""
-        self.scene = 0
+        self.scene = "overworld"
+        """The current game scene."""
+        self.player_location = Point(0, 0)
+        """The current location of the player on the game map."""
 
         #Party state
         self.current_poke = Pokemon(hp=0, max_hp=0, level=0)
@@ -83,6 +88,8 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
 
         if self.scene != "overworld":
             self.update_battle_stats()
+        else:
+            self.update_player_location()
 
     def update_current_poke(self):
         val = self.pyboy.get_memory_value(0xC1A6)
@@ -97,14 +104,21 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
     def update_battle_stats(self):
         self.opponent_poke.hp = read_big_endian(self.pyboy.get_memory_value(0xD0FF), self.pyboy.get_memory_value(0xD100))    
         self.opponent_poke.max_hp = read_big_endian(self.pyboy.get_memory_value(0xD101), self.pyboy.get_memory_value(0xD102))
-        self.opponent_poke.level = self.pyboy.get_memory_value(0xD0FC)    
+        self.opponent_poke.level = self.pyboy.get_memory_value(0xD0FC)
+
+    def update_player_location(self):
+        self.player_location.x = self.pyboy.get_memory_value(0xD20D)
+        self.player_location.y = self.pyboy.get_memory_value(0xD20E)    
 
     def update_badges(self):
-        self.badges = self.pyboy.get_memory_value(0xD57C)
+        b = self.pyboy.get_memory_value(0xD57C)
+        self.badges = badges.index(b)
     
     def update_scene(self):
         self.scene = list(scenes.keys())[list(scenes.values()).index(self.pyboy.get_memory_value(0xD116))]
     
+    def update_money(self):
+        self.money = self.pyboy.get_memory_value(0xD573) + self.pyboy.get_memory_value(0xD574) + self.pyboy.get_memory_value(0xD575)
     
     def get_elite_four(self):
         """
@@ -225,13 +239,13 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         # yapf: disable
         return (
             f"Pokemon Gold\n" +
+            f"Player Location in current map: ({self.player_location.x}, {self.player_location.y})" +
             f"Number of badges: {self.badges}\n" +
+            f"Money: {self.money} Pokedollars"+
             f"Current Poke HP: {self.current_poke.hp}/{self.current_poke.max_hp}\n" +
             f"Current Poke Level: {self.current_poke.level}\n" +
             f"Scene: {self.scene}\n" +
             f"Opponent Poke HP: {"NA" if self.opponent_poke.hp == -1 else self.opponent_poke.hp}/{"NA" if self.opponent_poke.max_hp == -1 else self.opponent_poke.max_hp}\n" +
-            f"Opponent Poke Level": {"NA" if self.opponent_poke.level == -1 else self.opponent_poke.level} +
-            f"Level progress: {self.level_progress}\n" +
-            f"Fitness: {self.fitness}\n"
+            f"Opponent Poke Level": {"NA" if self.opponent_poke.level == -1 else self.opponent_poke.level}
             )
         # yapf: enable
