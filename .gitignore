@@ -5,6 +5,8 @@ Super_Mario_Land.gb
 *.ss1
 Pokemon - Gold Version (USA, Europe) (SGB Enhanced).sav
 
+PyBoy/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

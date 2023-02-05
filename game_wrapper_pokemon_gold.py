@@ -6,7 +6,6 @@
 import logging
 
 import numpy as np
-from pyboy.utils import WindowEvent
 from collections import namedtuple
 
 from .base_plugin import PyBoyGameWrapper
@@ -20,12 +19,11 @@ except ImportError:
     cythonmode = False
 
 #enumeration of the different scenes available in the game
-scenes = {"overworld": 0, "wild": 1, "trainer": 2, "gym": 3, "elite_four": 0}
+scenes = {"overworld": 0, "wild": 1, "trainer": 2, "gym": 3, "elite_four": 4}
 
 Pokemon = namedtuple('Pokemon', ['hp', 'max_hp', 'level']) #simplified Pokemon representation
-Point = namedtuple('Point', ['x', 'y'])
 
-saved_state = "/home/alexandre/Documents/perso/emerald_deep_rl/games/after_rival_pokemon_gold"
+#saved_state = "/home/alexandre/Documents/perso/emerald_deep_rl/games/after_rival_pokemon_gold"
 
 badges = [0, 0x01, 0x01+0x02, 0x01+0x02+0x04, 0x01+0x02+0x04+0x08, 0x01+0x02+0x04+0x08+0x10, 0x01+0x02+0x04+0x08+0x10+0x20, 0x01+0x02+0x04+0x08+0x10+0x20+0x40, 0xFF]
 #Reads and returns 2 bytes big-endian memory value.
@@ -55,26 +53,24 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         """This value is set to True if the active Pokemon has low hp."""
         self.scene = "overworld"
         """The current game scene."""
-        self.player_location = Point(0, 0)
+        self.player_location = (0, 0)
         """The current location of the player on the game map."""
+        self.textbox = False
+        """This value is set to True if the player is talking to a NPC."""
 
         #Party state
-        self.current_poke = Pokemon(hp=0, max_hp=0, level=0)
+        self.current_poke_hp = 0
+        self.current_poke_max_hp = 0
+        self.current_poke_level = 0
         """State of the first pokemon of the party (current pokemon)."""
-        self.party_size = 0
+        #self.party_size = 0
         """The number of pokemons in party"""
 
         #Battle state
-        self.opponent_poke = Pokemon(hp=0, max_hp=0, level=0)
+        self.opponent_poke_hp = 0
+        self.opponent_poke_max_hp = 0
+        self.opponent_poke_level = 0
         """State of the current opponent Pokemon."""
-
-        self.fitness = 0
-        """
-        A built-in fitness scoring. Taking points, level progression, time left, and lives left into account.
-
-        .. math::
-            fitness = (lives\\_left \\cdot 10000) + (score + time\\_left \\cdot 10) + (\\_level\\_progress\\_max \\cdot 10)
-        """
 
         super().__init__(*args, game_area_section=(0, 2) + self.shape, game_area_wrap_around=True, **kwargs)
 
@@ -90,6 +86,7 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
             self.update_battle_stats()
         else:
             self.update_player_location()
+            self.update_textbox()
 
     def update_current_poke(self):
         val = self.pyboy.get_memory_value(0xC1A6)
@@ -97,18 +94,18 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
             self.low_hp = True
         else:
             self.low_hp = False
-        self.current_poke.hp = read_big_endian(self.pyboy.get_memory_value(0xDA4C), self.pyboy.get_memory_value(0xDA4D))
-        self.current_poke.max_hp = read_big_endian(self.pyboy.get_memory_value(0xDA4E), self.pyboy.get_memory_value(0xDA4F))
-        self.current_poke.level = self.pyboy.get_memory_value(0xDA49)
+        self.current_poke_hp = read_big_endian(self.pyboy.get_memory_value(0xDA4C), self.pyboy.get_memory_value(0xDA4D))
+        self.current_poke_max_hp = read_big_endian(self.pyboy.get_memory_value(0xDA4E), self.pyboy.get_memory_value(0xDA4F))
+        self.current_poke_level = self.pyboy.get_memory_value(0xDA49)
 
     def update_battle_stats(self):
-        self.opponent_poke.hp = read_big_endian(self.pyboy.get_memory_value(0xD0FF), self.pyboy.get_memory_value(0xD100))    
-        self.opponent_poke.max_hp = read_big_endian(self.pyboy.get_memory_value(0xD101), self.pyboy.get_memory_value(0xD102))
-        self.opponent_poke.level = self.pyboy.get_memory_value(0xD0FC)
+        self.opponent_poke_hp = read_big_endian(self.pyboy.get_memory_value(0xD0FF), self.pyboy.get_memory_value(0xD100))    
+        self.opponent_poke_max_hp = read_big_endian(self.pyboy.get_memory_value(0xD101), self.pyboy.get_memory_value(0xD102))
+        self.opponent_poke_level = self.pyboy.get_memory_value(0xD0FC)
 
     def update_player_location(self):
-        self.player_location.x = self.pyboy.get_memory_value(0xD20D)
-        self.player_location.y = self.pyboy.get_memory_value(0xD20E)    
+        self.player_location[0] = self.pyboy.get_memory_value(0xD20D)
+        self.player_location[1] = self.pyboy.get_memory_value(0xD20E)    
 
     def update_badges(self):
         b = self.pyboy.get_memory_value(0xD57C)
@@ -120,13 +117,16 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
     def update_money(self):
         self.money = self.pyboy.get_memory_value(0xD573) + self.pyboy.get_memory_value(0xD574) + self.pyboy.get_memory_value(0xD575)
     
+    def update_textbox(self):
+        self.textbox = True if self.pyboy.get_memory_value(0xD15B) == 4 else False
+    
     def get_elite_four(self):
         """
         get elite four
         """
         pass
 
-    def start_game(self, timer_div=None, world_level=None, unlock_level_select=False):
+    def start_game(self, saved_state, timer_div=None):
         """
         Call this function right after initializing PyBoy. This will start a game in world 1-1 and give back control on
         the first frame it's possible.
@@ -179,7 +179,7 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         self.pyboy.load_state(saved_state)
         self._set_timer_div(timer_div)
 
-    def reset_game(self, timer_div=None):
+    def reset_game(self, saved_state, timer_div=None):
         """
         After calling `start_game`, use this method to reset Mario to the beginning of world 1-1.
 
@@ -232,20 +232,19 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         return PyBoyGameWrapper.game_area(self)
 
     def game_over(self):
-        return self.current_poke.hp == 0
+        return self.current_poke_hp == 0
 
     def __repr__(self):
-        adjust = 4
         # yapf: disable
         return (
             f"Pokemon Gold\n" +
-            f"Player Location in current map: ({self.player_location.x}, {self.player_location.y})" +
+            f"Player Location in current map: ({self.player_location})" +
             f"Number of badges: {self.badges}\n" +
             f"Money: {self.money} Pokedollars"+
-            f"Current Poke HP: {self.current_poke.hp}/{self.current_poke.max_hp}\n" +
-            f"Current Poke Level: {self.current_poke.level}\n" +
+            f"Current Poke HP: {self.current_poke_hp}/{self.current_poke_max_hp}\n" +
+            f"Current Poke Level: {self.current_poke_level}\n" +
             f"Scene: {self.scene}\n" +
-            f"Opponent Poke HP: {"NA" if self.opponent_poke.hp == -1 else self.opponent_poke.hp}/{"NA" if self.opponent_poke.max_hp == -1 else self.opponent_poke.max_hp}\n" +
-            f"Opponent Poke Level": {"NA" if self.opponent_poke.level == -1 else self.opponent_poke.level}
+            f"Opponent Poke HP: {"NA" if self.opponent_poke_hp == -1 else self.opponent_poke_hp}/{"NA" if self.opponent_poke_max_hp == -1 else self.opponent_poke_max_hp}\n" +
+            f"Opponent Poke Level": {"NA" if self.opponent_poke_level == -1 else self.opponent_poke_level}
             )
         # yapf: enable

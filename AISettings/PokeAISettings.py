@@ -17,7 +17,8 @@ class GameState():
         self.current_poke = game_wrapper.current_poke
         self.opponent_poke = game_wrapper.opponent_poke
         self.scene = game_wrapper.scene
-
+        self.player_location = game_wrapper.player_location
+        self.textbox = game_wrapper.textbox
 
 class PokeAI(AISettingsInterface):
 	def __init__(self):
@@ -34,7 +35,8 @@ class PokeAI(AISettingsInterface):
 		reward = 0
 
 		if current_state.scene == "overworld":
-			pass
+			reward += self.ComputeMovementReward(prevGameState, current_state)
+			reward += self.ComputeBadgeReward(prevGameState, current_state)
 		elif current_state.scene == "wild":
 			if prevGameState.scene == "overworld":
 				reward += 1
@@ -51,9 +53,21 @@ class PokeAI(AISettingsInterface):
 		return reward
 	
 	def ComputeBattleReward(self, prevGameState: GameState, currentGameState: GameState):
-		poke_hp_diff = currentGameState.current_poke.hp - prevGameState.current_poke.hp
-		opponent_hp_diff = currentGameState.opponent_poke.hp - prevGameState.opponent_poke.hp
-		return DMG_REWARD*poke_hp_diff + DMG_REWARD*opponent_hp_diff
+		poke_hp_diff = currentGameState.current_poke_hp - prevGameState.current_poke_hp
+		opponent_hp_diff = currentGameState.opponent_poke_hp - prevGameState.opponent_poke_hp
+		if opponent_hp_diff < 0:
+			opponent_reward = - DMG_REWARD*opponent_hp_diff
+		else:
+			opponent_reward = 0
+		return DMG_REWARD*poke_hp_diff + opponent_reward
+	
+	def ComputeBadgeReward(self, prevGameState: GameState, currentGameState: GameState):
+		if currentGameState.badges > prevGameState.badges:
+			return 1000
+
+	def ComputeMovementReward(self, prevGameState: GameState, currentGameState: GameState):
+		if prevGameState.player_location == currentGameState.player_location and currentGameState.textbox == False:
+			return -1
 
 	def GetActions(self):
 		baseActions = [WindowEvent.PRESS_BUTTON_A,
@@ -78,14 +92,10 @@ class PokeAI(AISettingsInterface):
 		return filteredActions
 
 	def PrintGameState(self, pyboy):
-		gameState = GameState(pyboy)
+		#gameState = GameState(pyboy)
 		game_wrapper = pyboy.game_wrapper()
 
-		print("'Fake', level_progress: ", game_wrapper.level_progress)
-		print("'Real', level_progress: ", gameState.real_x_pos)
-		print("_level_progress_max: ", gameState._level_progress_max)
-		print("World: ", gameState.world)
-		print("Time respawn", pyboy.get_memory_value(0xFFA6))
+		print(repr(game_wrapper))
 
 	def GetGameState(self, pyboy):
 		return GameState(pyboy)
