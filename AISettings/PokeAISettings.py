@@ -17,8 +17,9 @@ class GameState():
         self.current_poke = game_wrapper.current_poke
         self.opponent_poke = game_wrapper.opponent_poke
         self.scene = game_wrapper.scene
+        self.low_hp = bool(game_wrapper.low_hp)
         self.player_location = game_wrapper.player_location
-        self.textbox = game_wrapper.textbox
+        self.textbox = bool(game_wrapper.textbox)
 
 class PokeAI(AISettingsInterface):
 	def __init__(self):
@@ -59,7 +60,8 @@ class PokeAI(AISettingsInterface):
 			opponent_reward = - DMG_REWARD*opponent_hp_diff
 		else:
 			opponent_reward = 0
-		return DMG_REWARD*poke_hp_diff + opponent_reward
+		low_hp_reward = -5 if currentGameState.low_hp else 0
+		return DMG_REWARD*poke_hp_diff + opponent_reward + low_hp_reward
 	
 	def ComputeBadgeReward(self, prevGameState: GameState, currentGameState: GameState):
 		if currentGameState.badges > prevGameState.badges:

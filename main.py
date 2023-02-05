@@ -5,6 +5,7 @@ from gym.wrappers import FrameStack, NormalizeObservation
 from AISettings.AISettingsInterface import AISettingsInterface
 from AISettings.MarioAISettings import MarioAI
 from AISettings.KirbyAISettings import KirbyAI
+from AISettings.PokeAISettings import PokeAI
 from MetricLogger import MetricLogger
 from agent import AIPlayer
 from wrappers import SkipFrame, ResizeObservation
@@ -91,6 +92,8 @@ if pyboy.game_wrapper().cartridge_title == "SUPER MARIOLAN":
 	aiSettings = MarioAI()
 if pyboy.game_wrapper().cartridge_title == "KIRBY DREAM LA":
 	aiSettings = KirbyAI()
+if pyboy.game_wrapper().cartridge_title == "POKEMON GOLD":
+	aiSettings = PokeAI()
 
 env = CustomPyBoyGym(pyboy, observation_type=observation_type)
 env.setAISettings(aiSettings)  # use this settings

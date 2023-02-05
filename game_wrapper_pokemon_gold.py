@@ -49,13 +49,13 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         """Provides the current number of badges."""
         self.money = 0
         """The amount of money."""
-        self.low_hp = False
+        self.low_hp = 0
         """This value is set to True if the active Pokemon has low hp."""
         self.scene = "overworld"
         """The current game scene."""
         self.player_location = (0, 0)
         """The current location of the player on the game map."""
-        self.textbox = False
+        self.textbox = 0
         """This value is set to True if the player is talking to a NPC."""
 
         #Party state
@@ -63,8 +63,6 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         self.current_poke_max_hp = 0
         self.current_poke_level = 0
         """State of the first pokemon of the party (current pokemon)."""
-        #self.party_size = 0
-        """The number of pokemons in party"""
 
         #Battle state
         self.opponent_poke_hp = 0
@@ -91,9 +89,9 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
     def update_current_poke(self):
         val = self.pyboy.get_memory_value(0xC1A6)
         if val > 80:
-            self.low_hp = True
+            self.low_hp = 1
         else:
-            self.low_hp = False
+            self.low_hp = 0
         self.current_poke_hp = read_big_endian(self.pyboy.get_memory_value(0xDA4C), self.pyboy.get_memory_value(0xDA4D))
         self.current_poke_max_hp = read_big_endian(self.pyboy.get_memory_value(0xDA4E), self.pyboy.get_memory_value(0xDA4F))
         self.current_poke_level = self.pyboy.get_memory_value(0xDA49)
@@ -118,7 +116,7 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         self.money = self.pyboy.get_memory_value(0xD573) + self.pyboy.get_memory_value(0xD574) + self.pyboy.get_memory_value(0xD575)
     
     def update_textbox(self):
-        self.textbox = True if self.pyboy.get_memory_value(0xD15B) == 4 else False
+        self.textbox = 1 if self.pyboy.get_memory_value(0xD15B) == 4 else 0
     
     def get_elite_four(self):
         """
@@ -126,7 +124,7 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         """
         pass
 
-    def start_game(self, saved_state, timer_div=None):
+    def start_game(self, timer_div=None, saved_state=""):
         """
         Call this function right after initializing PyBoy. This will start a game in world 1-1 and give back control on
         the first frame it's possible.
@@ -179,7 +177,7 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         self.pyboy.load_state(saved_state)
         self._set_timer_div(timer_div)
 
-    def reset_game(self, saved_state, timer_div=None):
+    def reset_game(self, timer_div=None, saved_state=""):
         """
         After calling `start_game`, use this method to reset Mario to the beginning of world 1-1.
 
@@ -244,7 +242,7 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
             f"Current Poke HP: {self.current_poke_hp}/{self.current_poke_max_hp}\n" +
             f"Current Poke Level: {self.current_poke_level}\n" +
             f"Scene: {self.scene}\n" +
-            f"Opponent Poke HP: {"NA" if self.opponent_poke_hp == -1 else self.opponent_poke_hp}/{"NA" if self.opponent_poke_max_hp == -1 else self.opponent_poke_max_hp}\n" +
-            f"Opponent Poke Level": {"NA" if self.opponent_poke_level == -1 else self.opponent_poke_level}
+            f"Opponent Poke HP: {'NA' if self.opponent_poke_hp == -1 else self.opponent_poke_hp}/{'NA' if self.opponent_poke_max_hp == -1 else self.opponent_poke_max_hp}\n" +
+            f"Opponent Poke Level: {'NA' if self.opponent_poke_level == -1 else self.opponent_poke_level}"
             )
         # yapf: enable
