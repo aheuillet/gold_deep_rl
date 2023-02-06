@@ -21,8 +21,6 @@ except ImportError:
 #enumeration of the different scenes available in the game
 scenes = {"overworld": 0, "wild": 1, "trainer": 2, "gym": 3, "elite_four": 4}
 
-Pokemon = namedtuple('Pokemon', ['hp', 'max_hp', 'level']) #simplified Pokemon representation
-
 #saved_state = "/home/alexandre/Documents/perso/emerald_deep_rl/games/after_rival_pokemon_gold"
 
 badges = [0, 0x01, 0x01+0x02, 0x01+0x02+0x04, 0x01+0x02+0x04+0x08, 0x01+0x02+0x04+0x08+0x10, 0x01+0x02+0x04+0x08+0x10+0x20, 0x01+0x02+0x04+0x08+0x10+0x20+0x40, 0xFF]
@@ -40,7 +38,7 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
 
     If you call `print` on an instance of this object, it will show an overview of everything this object provides.
     """
-    cartridge_title = "POKEMON GOLD"
+    cartridge_title = "POKEMON_GLDAAU"
 
     def __init__(self, *args, **kwargs):
         self.shape = (20, 16)
@@ -70,6 +68,9 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         self.opponent_poke_level = 0
         """State of the current opponent Pokemon."""
 
+        self.fitness = 0
+        """Fitness score. Computed as badges*100 + (current_hp/hp_max)*10"""
+
         super().__init__(*args, game_area_section=(0, 2) + self.shape, game_area_wrap_around=True, **kwargs)
 
     def post_tick(self):
@@ -85,6 +86,8 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         else:
             self.update_player_location()
             self.update_textbox()
+        
+        self.fitness = self.badges*100 +int((self.current_poke_hp/self.current_poke_max_hp)*10)
 
     def update_current_poke(self):
         val = self.pyboy.get_memory_value(0xC1A6)
@@ -124,24 +127,16 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         """
         pass
 
-    def start_game(self, timer_div=None, saved_state=""):
+    def start_game(self, timer_div=None):
         """
-        Call this function right after initializing PyBoy. This will start a game in world 1-1 and give back control on
-        the first frame it's possible.
+        Call this function right after initializing PyBoy. This will start a game by loading the saved state at the given path.
 
         The state of the emulator is saved, and using `reset_game`, you can get back to this point of the game
         instantly.
 
-        The game has 4 major worlds with each 3 level. to start at a specific world and level, provide it as a tuple for
-        the optional keyword-argument `world_level`.
-
-        If you're not using the game wrapper for unattended use, you can unlock the level selector for the main menu.
-        Enabling the selector, will make this function return before entering the game.
-
         Kwargs:
             timer_div (int): Replace timer's DIV register with this value. Use `None` to randomize.
-            world_level (tuple): (world, level) to start the game from
-            unlock_level_select (bool): Unlock level selector menu
+            saved_stated (str): Path to the save state file.
         """
         PyBoyGameWrapper.start_game(self, timer_div=timer_div)
 
@@ -174,10 +169,12 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         # self.saved_state.seek(0)
         # self.pyboy.save_state(self.saved_state)
 
-        self.pyboy.load_state(saved_state)
+        self.saved_state.seek(0)
+        self.pyboy.save_state(self.saved_state)
+
         self._set_timer_div(timer_div)
 
-    def reset_game(self, timer_div=None, saved_state=""):
+    def reset_game(self, timer_div=None):
         """
         After calling `start_game`, use this method to reset Mario to the beginning of world 1-1.
 
@@ -189,7 +186,6 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         """
         PyBoyGameWrapper.reset_game(self, timer_div=timer_div)
 
-        self.pyboy.load_state(saved_state)
         self._set_timer_div(timer_div)
 
     def game_area(self):

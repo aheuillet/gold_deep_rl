@@ -41,10 +41,12 @@ class CustomPyBoyGym(PyBoyGymEnv):
         """ Reset (or start) the gym environment throught the game_wrapper """
         saved_state = "/home/alexandre/Documents/perso/emerald_deep_rl/games/after_rival_pokemon_gold"
         if not self._started:
-            self.game_wrapper.start_game(**self._kwargs, saved_sate=saved_state)
+            saved_file = open(saved_state)
+            self.pyboy.load_state(saved_file)
+            self.game_wrapper.start_game(**self._kwargs)
             self._started = True
         else:
-            self.game_wrapper.reset_game(saved_state=saved_state)
+            self.game_wrapper.reset_game()
 
         # release buttons if not pressed now but were pressed in the past
         for pressedFromBefore in [pressed for pressed in self._button_is_pressed if self._button_is_pressed[pressed] == True]: # get all buttons currently pressed

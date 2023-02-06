@@ -14,8 +14,12 @@ class GameState():
         game_wrapper = pyboy.game_wrapper()
         self.money = game_wrapper.money
         self.badges = game_wrapper.badges
-        self.current_poke = game_wrapper.current_poke
-        self.opponent_poke = game_wrapper.opponent_poke
+        self.current_poke_hp = game_wrapper.current_poke_hp
+        self.current_poke_max_hp = game_wrapper.current_poke_max_hp
+        self.current_poke_level = game_wrapper.current_poke_level
+        self.opponent_poke_hp = game_wrapper.opponent_poke_hp
+        self.opponent_poke_max_hp = game_wrapper.opponent_poke_max_hp
+        self.opponent_poke_level = game_wrapper.opponent_poke_level
         self.scene = game_wrapper.scene
         self.low_hp = bool(game_wrapper.low_hp)
         self.player_location = game_wrapper.player_location
@@ -84,10 +88,10 @@ class PokeAI(AISettingsInterface):
 		totalActionsWithRepeats = list(itertools.permutations(baseActions, 2))
 		withoutRepeats = []
 
-		for combination in totalActionsWithRepeats:
-			reversedCombination = combination[::-1]
-			if(reversedCombination not in withoutRepeats):
-				withoutRepeats.append(combination)
+		# for combination in totalActionsWithRepeats:
+		# 	reversedCombination = combination[::-1]
+		# 	if(reversedCombination not in withoutRepeats):
+		# 		withoutRepeats.append(combination)
 
 		filteredActions = [[action] for action in baseActions] + withoutRepeats
 
@@ -108,9 +112,4 @@ class PokeAI(AISettingsInterface):
 		return config
 
 	def GetLength(self, pyboy):
-		result = sum([x[2] for x in self.realMax])
-
-		pyboy.game_wrapper()._level_progress_max = 0 # reset max level progress because game hasnt implemented it
-		self.realMax = []
-
-		return result
+		return pyboy.game_wrapper().badges

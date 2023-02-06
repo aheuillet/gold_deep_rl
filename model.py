@@ -19,7 +19,7 @@ class DDQN(nn.Module):
             nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(3744, 512),
+            nn.LazyLinear(512),
             nn.ReLU(),
             nn.Linear(512, output_dim)
         )

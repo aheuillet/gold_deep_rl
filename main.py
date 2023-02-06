@@ -3,8 +3,6 @@ from pathlib import Path
 from pyboy.pyboy import *
 from gym.wrappers import FrameStack, NormalizeObservation
 from AISettings.AISettingsInterface import AISettingsInterface
-from AISettings.MarioAISettings import MarioAI
-from AISettings.KirbyAISettings import KirbyAI
 from AISettings.PokeAISettings import PokeAI
 from MetricLogger import MetricLogger
 from agent import AIPlayer
@@ -20,7 +18,7 @@ from functions import alphanum_key
 episodes = 40000
 # gym variables  documentation: https://docs.pyboy.dk/openai_gym.html#pyboy.openai_gym.PyBoyGymEnv
 observation_types = ["raw", "tiles", "compressed", "minimal"]
-observation_type = observation_types[1]
+observation_type = observation_types[0]
 action_types = ["press", "toggle", "all"]
 action_type = action_types[0]
 gameDimentions = (20, 16)
@@ -33,8 +31,8 @@ playtest = False
   Choose game
 """
 gamesFolder = Path("games")
-games = [os.path.join(gamesFolder, f) for f in os.listdir(gamesFolder) if (os.path.isfile(os.path.join(gamesFolder, f)) and f.endswith(".gb"))]
-gameNames = [f.replace(".gb", "") for f in os.listdir(gamesFolder) if (os.path.isfile(os.path.join(gamesFolder, f)) and f.endswith(".gb"))]
+games = [os.path.join(gamesFolder, f) for f in os.listdir(gamesFolder) if (os.path.isfile(os.path.join(gamesFolder, f)) and f.endswith(".gbc"))]
+gameNames = [f.replace(".gb", "") for f in os.listdir(gamesFolder) if (os.path.isfile(os.path.join(gamesFolder, f)) and f.endswith(".gbc"))]
 
 print("Avaliable games: ", games)
 for cnt, gameName in enumerate(games, 1):
@@ -88,11 +86,8 @@ pyboy = PyBoy(game, window_type="headless" if quiet else "SDL2", window_scale=3,
   Load enviroment
 """
 aiSettings = AISettingsInterface()
-if pyboy.game_wrapper().cartridge_title == "SUPER MARIOLAN":
-	aiSettings = MarioAI()
-if pyboy.game_wrapper().cartridge_title == "KIRBY DREAM LA":
-	aiSettings = KirbyAI()
-if pyboy.game_wrapper().cartridge_title == "POKEMON GOLD":
+print(f"Cartridge title: {pyboy.cartridge_title()}")
+if pyboy.game_wrapper().cartridge_title == "POKEMON_GLDAAU":
 	aiSettings = PokeAI()
 
 env = CustomPyBoyGym(pyboy, observation_type=observation_type)
@@ -112,7 +107,7 @@ env = FrameStack(env, num_stack=frameStack)
   Load AI players
 """
 aiPlayer = AIPlayer((frameStack,) + gameDimentions, len(filteredActions), save_dir, now, aiSettings.GetHyperParameters())
-bossAiPlayer = AIPlayer((frameStack,) + gameDimentions, len(filteredActions), save_dir_boss, now, aiSettings.GetBossHyperParameters())
+#bossAiPlayer = AIPlayer((frameStack,) + gameDimentions, len(filteredActions), save_dir_boss, now, aiSettings.GetBossHyperParameters())
 
 if mode < 2:  # evaluate
 	# load model
@@ -148,8 +143,8 @@ if mode < 2:  # evaluate
 		print("No models to load in path: ", folder)
 		quit()
 
-	bossModelPath = checkpoint_dir / folder / fileList[-1]
-	bossAiPlayer.loadModel(bossModelPath)
+	#bossModelPath = checkpoint_dir / folder / fileList[-1]
+	#bossAiPlayer.loadModel(bossModelPath)
 
 """
   Main loop
@@ -161,12 +156,12 @@ if train:
 	save_dir_boss.mkdir(parents=True)
 	logger = MetricLogger(save_dir_boss)
 	aiPlayer.saveHyperParameters()
-	bossAiPlayer.saveHyperParameters()
+	#bossAiPlayer.saveHyperParameters()
 
 	print("Training mode")
 	print("Total Episodes: ", episodes)
 	aiPlayer.net.train()
-	bossAiPlayer.net.train()
+	#bossAiPlayer.net.train()
 
 	player = aiPlayer
 	for e in range(episodes):
@@ -199,7 +194,7 @@ if train:
 		logger.record(episode=e, epsilon=player.exploration_rate, stepsThisEpisode=player.curr_step, maxLength=aiSettings.GetLength(pyboy))
 
 	aiPlayer.save()
-	bossAiPlayer.save()
+	#bossAiPlayer.save()
 	env.close()
 elif not train and not playtest:
 	print("Evaluation mode")
@@ -211,8 +206,8 @@ elif not train and not playtest:
 	aiPlayer.exploration_rate = 0
 	aiPlayer.net.eval()
 
-	bossAiPlayer.exploration_rate = 0
-	bossAiPlayer.net.eval()
+	#bossAiPlayer.exploration_rate = 0
+	#bossAiPlayer.net.eval()
 
 	player = aiPlayer
 	for e in range(episodes):
