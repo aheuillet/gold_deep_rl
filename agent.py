@@ -58,12 +58,13 @@ class AIPlayer:
             actionIdx = random.randint(0, self.action_space_dim-1)
         # EXPLOIT
         else:
-            state = np.array(state)#.reshape(140, 140)
+            state = np.array(state)
             state = torch.tensor(state).float().to(device=self.device)
             state = state.unsqueeze(0)
             
 
             neuralNetOutput = self.net(state, model="online")
+            #print(f"outpiut shape: {neuralNetOutput}")
             actionIdx = torch.argmax(neuralNetOutput, axis=1).item()
 
         # decrease exploration_rate

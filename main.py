@@ -21,7 +21,7 @@ observation_types = ["raw", "tiles", "compressed", "minimal"]
 observation_type = observation_types[0]
 action_types = ["press", "toggle", "all"]
 action_type = action_types[0]
-gameDimentions = (20, 16)
+gameDimentions = (3, 80, 72)
 frameStack = 4
 quiet = False
 train = False
@@ -32,7 +32,7 @@ playtest = False
 """
 gamesFolder = Path("games")
 games = [os.path.join(gamesFolder, f) for f in os.listdir(gamesFolder) if (os.path.isfile(os.path.join(gamesFolder, f)) and f.endswith(".gbc"))]
-gameNames = [f.replace(".gb", "") for f in os.listdir(gamesFolder) if (os.path.isfile(os.path.join(gamesFolder, f)) and f.endswith(".gbc"))]
+gameNames = [f.replace(".gbc", "") for f in os.listdir(gamesFolder) if (os.path.isfile(os.path.join(gamesFolder, f)) and f.endswith(".gbc"))]
 
 print("Avaliable games: ", games)
 for cnt, gameName in enumerate(games, 1):
@@ -74,7 +74,7 @@ elif mode == 4:
 now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 save_dir = Path("checkpoints") / gameName / now
 save_dir_eval = Path("checkpoints") / gameName / (now + "-eval")
-save_dir_boss = Path("checkpoints") / gameName / (now + "-boss")
+#save_dir_boss = Path("checkpoints") / gameName / (now + "-boss")
 checkpoint_dir = Path("checkpoints") / gameName
 
 """
@@ -90,7 +90,7 @@ print(f"Cartridge title: {pyboy.cartridge_title()}")
 if pyboy.game_wrapper().cartridge_title == "POKEMON_GLDAAU":
 	aiSettings = PokeAI()
 
-env = CustomPyBoyGym(pyboy, observation_type=observation_type)
+env = CustomPyBoyGym(pyboy, observation_type="raw")
 env.setAISettings(aiSettings)  # use this settings
 filteredActions = aiSettings.GetActions()  # get possible actions
 print("Possible actions: ", [[WindowEvent(i).__str__() for i in x] for x in filteredActions])
@@ -98,15 +98,15 @@ print("Possible actions: ", [[WindowEvent(i).__str__() for i in x] for x in filt
 """
   Apply wrappers to enviroment
 """
-env = SkipFrame(env, skip=4)
+#env = SkipFrame(env, skip=4)
 env = ResizeObservation(env, gameDimentions)  # transform MultiDiscreate to Box for framestack
 env = NormalizeObservation(env)  # normalize the values
-env = FrameStack(env, num_stack=frameStack)
+#env = FrameStack(env, num_stack=frameStack)
 
 """
   Load AI players
 """
-aiPlayer = AIPlayer((frameStack,) + gameDimentions, len(filteredActions), save_dir, now, aiSettings.GetHyperParameters())
+aiPlayer = AIPlayer(gameDimentions, len(filteredActions), save_dir, now, aiSettings.GetHyperParameters())
 #bossAiPlayer = AIPlayer((frameStack,) + gameDimentions, len(filteredActions), save_dir_boss, now, aiSettings.GetBossHyperParameters())
 
 if mode < 2:  # evaluate
@@ -153,8 +153,8 @@ if mode < 2:  # evaluate
 if train:
 	pyboy.set_emulation_speed(0)
 	save_dir.mkdir(parents=True)
-	save_dir_boss.mkdir(parents=True)
-	logger = MetricLogger(save_dir_boss)
+	#save_dir_boss.mkdir(parents=True)
+	logger = MetricLogger(save_dir)
 	aiPlayer.saveHyperParameters()
 	#bossAiPlayer.saveHyperParameters()
 
@@ -174,10 +174,9 @@ if train:
 				player = aiPlayer
 			# Make action based on current state
 			actionId = player.act(observation)
-			actions = filteredActions[actionId]
+			action = filteredActions[actionId]
 			# Agent performs action and moves 1 frame
-			next_observation, reward, done, info = env.step(actions)
-
+			next_observation, reward, done, info = env.step(action)		
 			# Remember
 			player.cache(observation, next_observation, actionId, reward, done)
 			# Learn

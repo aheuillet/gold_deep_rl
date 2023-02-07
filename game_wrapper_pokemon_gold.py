@@ -105,8 +105,7 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         self.opponent_poke_level = self.pyboy.get_memory_value(0xD0FC)
 
     def update_player_location(self):
-        self.player_location[0] = self.pyboy.get_memory_value(0xD20D)
-        self.player_location[1] = self.pyboy.get_memory_value(0xD20E)    
+        self.player_location = (self.pyboy.get_memory_value(0xD20D), self.pyboy.get_memory_value(0xD20E))
 
     def update_badges(self):
         b = self.pyboy.get_memory_value(0xD57C)
@@ -232,13 +231,14 @@ class GameWrapperPokemonGold(PyBoyGameWrapper):
         # yapf: disable
         return (
             f"Pokemon Gold\n" +
-            f"Player Location in current map: ({self.player_location})" +
+            f"Player Location in current map: ({self.player_location})\n" +
             f"Number of badges: {self.badges}\n" +
-            f"Money: {self.money} Pokedollars"+
+            f"Money: {self.money} Pokedollars\n"+
             f"Current Poke HP: {self.current_poke_hp}/{self.current_poke_max_hp}\n" +
             f"Current Poke Level: {self.current_poke_level}\n" +
             f"Scene: {self.scene}\n" +
             f"Opponent Poke HP: {'NA' if self.opponent_poke_hp == -1 else self.opponent_poke_hp}/{'NA' if self.opponent_poke_max_hp == -1 else self.opponent_poke_max_hp}\n" +
-            f"Opponent Poke Level: {'NA' if self.opponent_poke_level == -1 else self.opponent_poke_level}"
+            f"Opponent Poke Level: {'NA' if self.opponent_poke_level == -1 else self.opponent_poke_level}\n" +
+            f"Fitness: {self.fitness}"
             )
         # yapf: enable

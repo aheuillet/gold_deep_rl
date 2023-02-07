@@ -39,9 +39,9 @@ class CustomPyBoyGym(PyBoyGymEnv):
 
     def reset(self):
         """ Reset (or start) the gym environment throught the game_wrapper """
-        saved_state = "/home/alexandre/Documents/perso/emerald_deep_rl/games/after_rival_pokemon_gold"
+        saved_state = "/home/alexandre/Documents/perso/emerald_deep_rl/games/Pokemon - Gold Version (USA, Europe) (SGB Enhanced).gbc.state"
         if not self._started:
-            saved_file = open(saved_state)
+            saved_file = open(saved_state, "rb")
             self.pyboy.load_state(saved_file)
             self.game_wrapper.start_game(**self._kwargs)
             self._started = True

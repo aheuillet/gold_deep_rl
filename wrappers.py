@@ -11,7 +11,7 @@ class ResizeObservation(gym.ObservationWrapper):
         else:
             self.shape = tuple(shape)
 
-        obs_shape = self.shape + self.observation_space.shape[2:]
+        obs_shape = self.shape
         self.observation_space = Box(low=0, high=255, shape=obs_shape)
 
     def observation(self, observation):

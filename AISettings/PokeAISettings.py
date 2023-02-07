@@ -68,12 +68,13 @@ class PokeAI(AISettingsInterface):
 		return DMG_REWARD*poke_hp_diff + opponent_reward + low_hp_reward
 	
 	def ComputeBadgeReward(self, prevGameState: GameState, currentGameState: GameState):
-		if currentGameState.badges > prevGameState.badges:
-			return 1000
+		return 1000 if currentGameState.badges > prevGameState.badges else 0
 
 	def ComputeMovementReward(self, prevGameState: GameState, currentGameState: GameState):
 		if prevGameState.player_location == currentGameState.player_location and currentGameState.textbox == False:
 			return -1
+		else:
+			return 0
 
 	def GetActions(self):
 		baseActions = [WindowEvent.PRESS_BUTTON_A,
