@@ -11,7 +11,6 @@ import sys
 from CustomPyBoyGym import CustomPyBoyGym
 from functions import alphanum_key
 
-
 """
   Variables
 """
@@ -168,10 +167,6 @@ if train:
 		observation = env.reset()
 		start = time.time()
 		while True:
-			if aiSettings.IsBossActive(pyboy):
-				player = bossAiPlayer
-			else:
-				player = aiPlayer
 			# Make action based on current state
 			actionId = player.act(observation)
 			action = filteredActions[actionId]

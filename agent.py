@@ -64,8 +64,9 @@ class AIPlayer:
             
 
             neuralNetOutput = self.net(state, model="online")
-            #print(f"outpiut shape: {neuralNetOutput}")
-            actionIdx = torch.argmax(neuralNetOutput, axis=1).item()
+            #print(f"output shape: {neuralNetOutput.shape}")
+            neuralNetOutput = torch.mean(neuralNetOutput, dim=0)
+            actionIdx = torch.argmax(neuralNetOutput).item()
 
         # decrease exploration_rate
         self.exploration_rate *= self.exploration_rate_decay

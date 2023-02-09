@@ -15,6 +15,7 @@ class DDQN(nn.Module):
             nn.ReLU(),
             nn.Conv2d(in_channels=32, out_channels=32, kernel_size=2, stride=1),
             nn.ReLU(),
+            nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
             nn.LazyLinear(512),
             nn.ReLU(),
