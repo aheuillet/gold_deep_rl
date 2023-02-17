@@ -1,6 +1,5 @@
 import torch.nn as nn
 import copy
-
 # based on pytorch tutorial by yfeng997: https://github.com/yfeng997/MadMario/blob/master/neural.py
 
 class DDQN(nn.Module):
@@ -9,17 +8,17 @@ class DDQN(nn.Module):
         c, h, w = input_dim
     
         self.online = nn.Sequential(
-            nn.Conv2d(in_channels=c, out_channels=16, kernel_size=4, stride=1),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=16, out_channels=32, kernel_size=4, stride=1),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=32, out_channels=32, kernel_size=2, stride=1),
-            nn.ReLU(),
+            nn.Conv2d(in_channels=c, out_channels=32, kernel_size=6, stride=2),
+            nn.ELU(),
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2),
+            nn.ELU(),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1),
+            nn.ELU(),
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
-            nn.LazyLinear(512),
-            nn.ReLU(),
-            nn.Linear(512, output_dim)
+            nn.Linear(64,64),
+            nn.ELU(),
+            nn.Linear(64, output_dim)
         )
 
         self.target = copy.deepcopy(self.online)
