@@ -1,5 +1,7 @@
 from pyboy.pyboy import *
 from AISettings.AISettingsInterface import AISettingsInterface
+from AISettings.PokeAISettings import PokeAI
+import numpy as np
 class CustomPyBoyGym(PyBoyGymEnv):
     def step(self, list_actions):
         """
@@ -41,6 +43,8 @@ class CustomPyBoyGym(PyBoyGymEnv):
         """ Reset (or start) the gym environment throught the game_wrapper """
         saved_state = "/home/alexandre/Documents/perso/emerald_deep_rl/games/Pokemon - Gold Version (USA, Europe) (SGB Enhanced).gbc.state"
         if not self._started:
+            if not hasattr(self, "aiSettings"):
+                self.setAISettings = PokeAI()
             saved_file = open(saved_state, "rb")
             self.pyboy.load_state(saved_file)
             self.game_wrapper.start_game(**self._kwargs)
@@ -54,3 +58,9 @@ class CustomPyBoyGym(PyBoyGymEnv):
         self.button_is_pressed = {button: False for button in self._buttons} # reset all buttons
 
         return self._get_observation()
+    
+    def render(self, mode="rgb_array"):
+        if self.render_mode == "rgb_array":
+            return np.asarray(self.pyboy.botsupport_manager().screen().screen_ndarray(), dtype=np.uint8)
+        else:
+            return NotImplementedError
