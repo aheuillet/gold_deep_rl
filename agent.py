@@ -91,11 +91,11 @@ class AIPlayer:
         state = np.array(state)
         next_state = np.array(next_state)
 
-        state = torch.tensor(state).float().to(device=self.device)
-        next_state = torch.tensor(next_state).float().to(device=self.device)
-        action = torch.tensor([action]).to(device=self.device)
-        reward = torch.tensor([reward]).to(device=self.device)
-        done = torch.tensor([done]).to(device=self.device)
+        state = torch.tensor(state).float()
+        next_state = torch.tensor(next_state).float()
+        action = torch.tensor([action])
+        reward = torch.tensor([reward])
+        done = torch.tensor([done])
 
         self.memory.append((state, next_state, action, reward, done))
 
@@ -152,6 +152,7 @@ class AIPlayer:
         """
             Output is batch_size number of rewards = Q_online(s,a) * 32
         """
+        state = state.to(device=self.device)
         modelOutPut = self.net(state, model="online")
         current_Q = modelOutPut[np.arange(0, self.batch_size), action]  # Q_online(s,a)
         return current_Q
@@ -161,6 +162,7 @@ class AIPlayer:
         """
             Output is batch_size number of Q*(s,a) = r + (1-done) * gamma * Q_target(s', argmax_a'( Q_online(s',a') ) )
         """
+        next_state = next_state.to(device=self.device)
         next_state_Q = self.net(next_state, model="online") 
         best_action = torch.argmax(next_state_Q, axis=1) # argmax_a'( Q_online(s',a') ) 
         next_Q = self.net(next_state, model="target")[np.arange(0, self.batch_size), best_action] # Q_target(s', argmax_a'( Q_online(s',a') ) )
