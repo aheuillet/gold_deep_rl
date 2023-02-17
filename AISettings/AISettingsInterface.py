@@ -16,7 +16,7 @@ class Config():
         """
             Memory
         """
-        self.deque_size = 400000
+        self.deque_size = 100000
         self.batch_size = 256
         self.save_every = 5e5  # no. of experiences between saving Mario Net
 

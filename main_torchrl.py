@@ -182,12 +182,6 @@ if __name__ == "main":
     ) = make_model(dummy_env)
     params_flat = params.flatten_keys(".")
     params_target_flat = params_target.flatten_keys(".")
-
-    replay_buffer = TensorDictReplayBuffer(
-    storage=LazyMemmapStorage(buffer_size),
-    prefetch=n_optim,
-    )
-
     #register gym env
     gym.register("PyBoy", entry_point=CustomPyBoyGym, kwargs={"observation_type": "raw"})
 
