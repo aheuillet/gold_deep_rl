@@ -163,6 +163,8 @@ class AIPlayer:
             Output is batch_size number of Q*(s,a) = r + (1-done) * gamma * Q_target(s', argmax_a'( Q_online(s',a') ) )
         """
         next_state = next_state.to(device=self.device)
+        reward = reward.to(device=self.device)
+        done = done.to(device=self.device)
         next_state_Q = self.net(next_state, model="online") 
         best_action = torch.argmax(next_state_Q, axis=1) # argmax_a'( Q_online(s',a') ) 
         next_Q = self.net(next_state, model="target")[np.arange(0, self.batch_size), best_action] # Q_target(s', argmax_a'( Q_online(s',a') ) )
