@@ -40,7 +40,7 @@ class PokeAI(AISettingsInterface):
 		reward = 0
 
 		if current_state.scene == "overworld":
-			reward += self.ComputeMovementReward(prevGameState, current_state)
+			#reward += self.ComputeMovementReward(prevGameState, current_state)
 			reward += self.ComputeBadgeReward(prevGameState, current_state)
 		elif current_state.scene == "wild":
 			if prevGameState.scene == "overworld":
