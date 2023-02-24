@@ -14,7 +14,7 @@ from functions import alphanum_key
 """
   Variables
 """
-episodes = 40000
+episodes = 4000
 # gym variables  documentation: https://docs.pyboy.dk/openai_gym.html#pyboy.openai_gym.PyBoyGymEnv
 observation_types = ["raw", "tiles", "compressed", "minimal"]
 observation_type = observation_types[0]
@@ -163,6 +163,7 @@ if train:
 	#bossAiPlayer.net.train()
 
 	player = aiPlayer
+	allocated_time = 500
 	for e in range(episodes):
 		observation = env.reset()
 		start = time.time()
@@ -181,11 +182,15 @@ if train:
 			# Update state
 			observation = next_observation
 
-			if done or time.time() - start > 500:
+			if done or time.time() - start > allocated_time:
 				break
 
 		logger.log_episode()
 		logger.record(episode=e, epsilon=player.exploration_rate, stepsThisEpisode=player.curr_step, maxLength=aiSettings.GetLength(pyboy))
+		if e > 5:
+			if player.compute_std_rewards() < 1:
+				allocated_time *= 1.5
+			
 
 	aiPlayer.save()
 	#bossAiPlayer.save()
