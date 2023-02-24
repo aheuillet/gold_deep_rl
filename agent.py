@@ -98,16 +98,6 @@ class AIPlayer:
         done = torch.tensor([done])
 
         self.memory.append((state, next_state, action, reward, done))
-    
-    def compute_std_rewards(self, n=5):
-        """
-        Computes the standard deviation of the rewards of the last n episodes.
-        """
-        rewards = []
-        for i in range(-1, -n, -1):
-            state, next_state, action, reward, done = self.memory[-1]
-            rewards.append(reward)
-        return np.std(rewards)
 
     def recall(self):
         """

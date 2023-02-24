@@ -1,5 +1,7 @@
 import datetime
+import numpy as np
 from pathlib import Path
+from collections import deque
 from pyboy.pyboy import *
 from gym.wrappers import FrameStack, NormalizeObservation
 from AISettings.AISettingsInterface import AISettingsInterface
@@ -25,7 +27,7 @@ frameStack = 4
 quiet = False
 train = False
 playtest = False
-
+save_freq = 50
 """
   Choose game
 """
@@ -187,10 +189,8 @@ if train:
 
 		logger.log_episode()
 		logger.record(episode=e, epsilon=player.exploration_rate, stepsThisEpisode=player.curr_step, maxLength=aiSettings.GetLength(pyboy))
-		if e > 5:
-			if player.compute_std_rewards() < 1:
-				allocated_time *= 1.5
-			
+		if e > 5 and np.std(logger.ep_rewards[-5:]) < 1:
+			allocated_time *= 1.5			
 
 	aiPlayer.save()
 	#bossAiPlayer.save()
