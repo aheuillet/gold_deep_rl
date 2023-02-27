@@ -28,6 +28,8 @@ quiet = False
 train = False
 playtest = False
 save_freq = 50
+allocated_time = 500
+std_threshold = 5
 """
   Choose game
 """
@@ -165,7 +167,6 @@ if train:
 	#bossAiPlayer.net.train()
 
 	player = aiPlayer
-	allocated_time = 500
 	for e in range(episodes):
 		observation = env.reset()
 		start = time.time()
@@ -189,7 +190,8 @@ if train:
 
 		logger.log_episode()
 		logger.record(episode=e, epsilon=player.exploration_rate, stepsThisEpisode=player.curr_step, maxLength=aiSettings.GetLength(pyboy))
-		if e > 5 and np.std(logger.ep_rewards[-5:]) < 1:
+		std = np.std(logger.ep_rewards[-5:])
+		if e > 5 and std > 0 and std <= std_threshold:
 			allocated_time *= 1.5			
 
 	aiPlayer.save()
