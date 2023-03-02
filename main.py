@@ -29,7 +29,7 @@ train = False
 playtest = False
 save_freq = 50
 allocated_time = 500
-std_threshold = 5
+std_threshold = 0.02
 """
   Choose game
 """
@@ -190,9 +190,13 @@ if train:
 
 		logger.log_episode()
 		logger.record(episode=e, epsilon=player.exploration_rate, stepsThisEpisode=player.curr_step, maxLength=aiSettings.GetLength(pyboy))
-		std = np.std(logger.ep_rewards[-5:])
-		if e > 5 and std > 0 and std <= std_threshold:
-			allocated_time *= 1.5			
+		std = np.std(logger.ep_rewards[-3:])/np.mean(logger.ep_rewards[-3:])
+		if e > 10:
+			print(f"Last three episodes rewards: {logger.ep_rewards[-3:]}")
+			print(f"std: {std*100} % of the mean")
+			if std <= std_threshold:  
+				allocated_time *= 1.5
+				print(f"Increasing allocated time to {allocated_time}")
 
 	aiPlayer.save()
 	#bossAiPlayer.save()
