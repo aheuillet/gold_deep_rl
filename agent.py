@@ -60,11 +60,10 @@ class AIPlayer:
         else:
             state = np.array(state)
             state = torch.tensor(state).float().to(device=self.device)
-            state = state.unsqueeze(0)
+            #state = state.unsqueeze(0)
             
 
             neuralNetOutput = self.net(state, model="online")
-            #print(f"output shape: {neuralNetOutput.shape}")
             neuralNetOutput = torch.mean(neuralNetOutput, dim=0)
             actionIdx = torch.argmax(neuralNetOutput).item()
 

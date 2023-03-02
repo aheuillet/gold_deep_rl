@@ -5,7 +5,7 @@ import copy
 class DDQN(nn.Module):
     def __init__(self, input_dim, output_dim):
         super().__init__()
-        c, h, w = input_dim
+        b, c, h, w = input_dim
     
         self.online = nn.Sequential(
             nn.Conv2d(in_channels=c, out_channels=32, kernel_size=6, stride=2),

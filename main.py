@@ -101,15 +101,15 @@ print("Possible actions: ", [[WindowEvent(i).__str__() for i in x] for x in filt
 """
   Apply wrappers to enviroment
 """
-#env = SkipFrame(env, skip=4)
+env = SkipFrame(env, skip=4)
 env = ResizeObservation(env, gameDimentions)  # transform MultiDiscreate to Box for framestack
 env = NormalizeObservation(env)  # normalize the values
-#env = FrameStack(env, num_stack=frameStack)
+env = FrameStack(env, num_stack=frameStack)
 
 """
   Load AI players
 """
-aiPlayer = AIPlayer(gameDimentions, len(filteredActions), save_dir, now, aiSettings.GetHyperParameters())
+aiPlayer = AIPlayer((frameStack,) + gameDimentions, len(filteredActions), save_dir, now, aiSettings.GetHyperParameters())
 #bossAiPlayer = AIPlayer((frameStack,) + gameDimentions, len(filteredActions), save_dir_boss, now, aiSettings.GetBossHyperParameters())
 
 if mode < 2:  # evaluate
@@ -136,15 +136,15 @@ if mode < 2:  # evaluate
 	modelPath = checkpoint_dir / folder / fileList[-1]
 	aiPlayer.loadModel(modelPath)
 
-	choice = int(input("Select folder with boss model[1-%s] (if not using boss model select same as previous): " % cnt)) - 1
-	folder = folderList[choice]
-	print(folder)
+	# choice = int(input("Select folder with boss model[1-%s] (if not using boss model select same as previous): " % cnt)) - 1
+	# folder = folderList[choice]
+	# print(folder)
 
-	fileList = [f for f in os.listdir(checkpoint_dir / folder) if f.endswith(".chkpt")]
-	fileList.sort(key=alphanum_key)
-	if len(fileList) == 0:
-		print("No models to load in path: ", folder)
-		quit()
+	# fileList = [f for f in os.listdir(checkpoint_dir / folder) if f.endswith(".chkpt")]
+	# fileList.sort(key=alphanum_key)
+	# if len(fileList) == 0:
+	# 	print("No models to load in path: ", folder)
+	# 	quit()
 
 	#bossModelPath = checkpoint_dir / folder / fileList[-1]
 	#bossAiPlayer.loadModel(bossModelPath)
@@ -190,8 +190,8 @@ if train:
 
 		logger.log_episode()
 		logger.record(episode=e, epsilon=player.exploration_rate, stepsThisEpisode=player.curr_step, maxLength=aiSettings.GetLength(pyboy))
-		std = np.std(logger.ep_rewards[-3:])/np.mean(logger.ep_rewards[-3:])
 		if e > 10:
+			std = np.std(logger.ep_rewards[-3:])/np.mean(logger.ep_rewards[-3:])
 			print(f"Last three episodes rewards: {logger.ep_rewards[-3:]}")
 			print(f"std: {std*100} % of the mean")
 			if std <= std_threshold:  
@@ -218,10 +218,10 @@ elif not train and not playtest:
 	for e in range(episodes):
 		observation = env.reset()
 		while True:
-			if aiSettings.IsBossActive(pyboy):
-				player = bossAiPlayer
-			else:
-				player = aiPlayer
+			# if aiSettings.IsBossActive(pyboy):
+			# 	player = bossAiPlayer
+			# else:
+			# 	player = aiPlayer
 			actionId = player.act(observation)
 			action = filteredActions[actionId]
 			next_observation, reward, done, info = env.step(action)
@@ -230,7 +230,7 @@ elif not train and not playtest:
 
 			print("Reward: ", reward)
 			print("Action: ", [WindowEvent(i).__str__() for i in action])
-			aiSettings.PrintGameState(pyboy)
+			#aiSettings.PrintGameState(pyboy)
 
 			observation = next_observation
 
