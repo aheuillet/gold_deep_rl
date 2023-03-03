@@ -22,13 +22,13 @@ observation_types = ["raw", "tiles", "compressed", "minimal"]
 observation_type = observation_types[0]
 action_types = ["press", "toggle", "all"]
 action_type = action_types[0]
-gameDimentions = (3, 80, 72)
 frameStack = 4
+gameDimensions = (3, 80, 72)
 quiet = False
 train = False
 playtest = False
 save_freq = 50
-allocated_time = 500
+allocated_time = 200
 std_threshold = 0.02
 """
   Choose game
@@ -102,14 +102,14 @@ print("Possible actions: ", [[WindowEvent(i).__str__() for i in x] for x in filt
   Apply wrappers to enviroment
 """
 env = SkipFrame(env, skip=4)
-env = ResizeObservation(env, gameDimentions)  # transform MultiDiscreate to Box for framestack
+env = ResizeObservation(env, gameDimensions)  # transform MultiDiscreate to Box for framestack
 env = NormalizeObservation(env)  # normalize the values
 env = FrameStack(env, num_stack=frameStack)
 
 """
   Load AI players
 """
-aiPlayer = AIPlayer((frameStack,) + gameDimentions, len(filteredActions), save_dir, now, aiSettings.GetHyperParameters())
+aiPlayer = AIPlayer((frameStack,) + gameDimensions, len(filteredActions), save_dir, now, aiSettings.GetHyperParameters())
 #bossAiPlayer = AIPlayer((frameStack,) + gameDimentions, len(filteredActions), save_dir_boss, now, aiSettings.GetBossHyperParameters())
 
 if mode < 2:  # evaluate
@@ -172,10 +172,11 @@ if train:
 		start = time.time()
 		while True:
 			# Make action based on current state
+			
 			actionId = player.act(observation)
 			action = filteredActions[actionId]
 			# Agent performs action and moves 1 frame
-			next_observation, reward, done, info = env.step(action)		
+			next_observation, reward, done, info = env.step(action)	
 			# Remember
 			player.cache(observation, next_observation, actionId, reward, done)
 			# Learn

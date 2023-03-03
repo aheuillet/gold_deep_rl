@@ -58,14 +58,12 @@ class AIPlayer:
             actionIdx = random.randint(0, self.action_space_dim-1)
         # EXPLOIT
         else:
-            state = np.array(state)
+            state = np.array(state).reshape(self.state_dim[0]*self.state_dim[1], self.state_dim[2], self.state_dim[3])
             state = torch.tensor(state).float().to(device=self.device)
-            #state = state.unsqueeze(0)
-            
+            state = state.unsqueeze(0)
 
             neuralNetOutput = self.net(state, model="online")
-            neuralNetOutput = torch.mean(neuralNetOutput, dim=0)
-            actionIdx = torch.argmax(neuralNetOutput).item()
+            actionIdx = torch.argmax(neuralNetOutput, axis=1).item()
 
         # decrease exploration_rate
         self.exploration_rate *= self.exploration_rate_decay
@@ -87,8 +85,8 @@ class AIPlayer:
         reward (float),
         done(bool))
         """
-        state = np.array(state)
-        next_state = np.array(next_state)
+        state = np.array(state).reshape(self.state_dim[0]*self.state_dim[1], self.state_dim[2], self.state_dim[3])
+        next_state = np.array(next_state).reshape(self.state_dim[0]*self.state_dim[1], self.state_dim[2], self.state_dim[3])
 
         state = torch.tensor(state).float()
         next_state = torch.tensor(next_state).float()
