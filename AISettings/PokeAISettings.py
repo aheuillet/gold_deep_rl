@@ -44,15 +44,15 @@ class PokeAI(AISettingsInterface):
 			reward += self.ComputeBadgeReward(prevGameState, current_state)
 		elif current_state.scene == "wild":
 			if prevGameState.scene == "overworld":
-				reward += 1
+				reward += 0.1
 			reward += self.ComputeBattleReward(prevGameState, current_state)
 		elif current_state.scene == "trainer":
 			if prevGameState.scene == "overworld":
-				reward += 10
+				reward += 0.5
 			reward += self.ComputeBattleReward(prevGameState, current_state)
 		elif current_state.scene == "gym":
 			if prevGameState.scene == "overworld":
-				reward += 100
+				reward += 1
 			reward += self.ComputeBattleReward(prevGameState, current_state)
 
 		return reward
@@ -61,18 +61,18 @@ class PokeAI(AISettingsInterface):
 		poke_hp_diff = currentGameState.current_poke_hp - prevGameState.current_poke_hp
 		opponent_hp_diff = currentGameState.opponent_poke_hp - prevGameState.opponent_poke_hp
 		if opponent_hp_diff < 0:
-			opponent_reward = - DMG_REWARD*opponent_hp_diff
+			opponent_reward = - DMG_REWARD*(opponent_hp_diff/currentGameState.opponent_poke_max_hp)
 		else:
 			opponent_reward = 0
-		low_hp_reward = -5 if currentGameState.low_hp else 0
-		return DMG_REWARD*poke_hp_diff + opponent_reward + low_hp_reward
+		low_hp_reward = -0.05 if currentGameState.low_hp else 0
+		return DMG_REWARD*(poke_hp_diff/currentGameState.current_poke_max_hp) + opponent_reward + low_hp_reward
 	
 	def ComputeBadgeReward(self, prevGameState: GameState, currentGameState: GameState):
-		return 1000 if currentGameState.badges > prevGameState.badges else 0
+		return 1 if currentGameState.badges > prevGameState.badges else 0
 
 	def ComputeMovementReward(self, prevGameState: GameState, currentGameState: GameState):
-		if prevGameState.player_location == currentGameState.player_location and currentGameState.textbox == False:
-			return -1
+		if prevGameState.player_location == currentGameState.player_location: #and currentGameState.textbox == False:
+			return -0.0001
 		else:
 			return 0
 
