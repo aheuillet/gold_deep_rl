@@ -5,6 +5,7 @@ import numpy as np
 import torch
 from AISettings.AISettingsInterface import Config
 from model import DDQN
+from forward_model import ForwardModel
 
 #based on pytorch RL tutorial by yfeng997: https://github.com/yfeng997/MadMario/blob/master/agent.py
 class AIPlayer:
@@ -34,10 +35,17 @@ class AIPlayer:
         self.save_every = self.config.save_every  # no. of experiences between saving Mario Net
 
         """
+            Curiosity
+        """
+        self.curiosity_loss = torch.nn.MSELoss()
+        self.curiosity_model = ForwardModel(512, self.action_space_dim).to(device=self.device)
+        self.curiosity_factor = 2
+
+        """
             Q learning
         """
         self.gamma = self.config.gamma
-        self.optimizer = torch.optim.Adam(self.net.parameters(), lr=self.config.learning_rate)
+        self.optimizer = torch.optim.Adam([self.net.parameters(), self.curiosity_model.parameters()], lr=self.config.learning_rate)
         self.scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=self.config.learning_rate_decay)
         self.loss_fn = torch.nn.SmoothL1Loss()
         self.burnin = self.config.burnin  # min. experiences before training
@@ -73,6 +81,18 @@ class AIPlayer:
         self.curr_step += 1
 
         return actionIdx
+
+    def compute_curiosity(self, state, next_state, action):
+
+       
+        state = self.net.cnn(state)
+        next_state = self.net.cnn(next_state)
+
+        pred_next_state = self.curiosity_model(state, action)
+
+        loss = self.curiosity_loss(pred_next_state, next_state)
+        return loss
+
 
     def cache(self, state, next_state, action, reward, done):
         """
@@ -127,13 +147,16 @@ class AIPlayer:
         # Get TD Target make predictions for next state of each memory
         td_tgt = self.td_target(reward, next_state, done)
 
+        #Compute the intrinsic curiosity loss
+        curiosity = self.compute_curiosity(state, next_state, action)
+
         # Backpropagate loss through Q_online
-        loss = self.update_Q_online(td_est, td_tgt)
+        loss = self.update_Q_online(td_est, td_tgt, curiosity)
 
         return (td_est.mean().item(), loss)
 
-    def update_Q_online(self, td_estimate, td_target):
-        loss = self.loss_fn(td_estimate, td_target)
+    def update_Q_online(self, td_estimate, td_target, curiosity_loss):
+        loss = self.loss_fn(td_estimate, td_target) + self.curiosity_factor*curiosity_loss
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()

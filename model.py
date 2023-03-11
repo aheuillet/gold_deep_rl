@@ -6,8 +6,8 @@ class DDQN(nn.Module):
     def __init__(self, input_dim, output_dim):
         super().__init__()
         f, c, h, w = input_dim
-    
-        self.online = nn.Sequential(
+
+        self.cnn = nn.Sequential(
             nn.Conv2d(in_channels=f*c, out_channels=32, kernel_size=6, stride=2),
             nn.ELU(),
             nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2),
@@ -17,8 +17,10 @@ class DDQN(nn.Module):
             nn.Flatten(),
             nn.Linear(14336,512),
             nn.ELU(),
-            nn.Linear(512, output_dim)
         )
+    
+        self.fc = nn.Linear(512, output_dim)
+        self.online = nn.Sequential(self.cnn, self.fc)
 
         self.target = copy.deepcopy(self.online)
 
